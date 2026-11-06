@@ -3,6 +3,7 @@ package server
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -83,6 +84,10 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 
 	if err := s.auth.SeedAdmin(cfg.AdminUser, cfg.AdminPassword); err != nil {
 		logger.Warn("seed admin account", "err", err)
+	}
+
+	if strings.TrimSpace(cfg.APIToken) != "" {
+		logger.Info("api token authentication enabled")
 	}
 
 	s.sup = supervisor.New(supervisor.Config{
@@ -238,6 +243,11 @@ func (s *Server) Shutdown(ctx context.Context) {
 
 func (s *Server) authed(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Automation token: full administrator rights, no cookie or CSRF header.
+		if s.hasValidAPIToken(r) {
+			next(w, r)
+			return
+		}
 		cookie, err := r.Cookie(sessionCookie)
 		if err != nil || !s.auth.Valid(cookie.Value) {
 			writeError(w, http.StatusUnauthorized, errors.New("not signed in"))
@@ -253,6 +263,22 @@ func (s *Server) authed(next http.HandlerFunc) http.HandlerFunc {
 		}
 		next(w, r)
 	}
+}
+
+// hasValidAPIToken reports whether the request carries the configured bearer
+// token. It is a no-op when no token is configured.
+func (s *Server) hasValidAPIToken(r *http.Request) bool {
+	expected := strings.TrimSpace(s.cfg.APIToken)
+	if expected == "" {
+		return false
+	}
+	header := r.Header.Get("Authorization")
+	const prefix = "Bearer "
+	if len(header) <= len(prefix) || !strings.EqualFold(header[:len(prefix)], prefix) {
+		return false
+	}
+	got := strings.TrimSpace(header[len(prefix):])
+	return subtle.ConstantTimeCompare([]byte(got), []byte(expected)) == 1
 }
 
 func securityHeaders(next http.Handler) http.Handler {
@@ -293,6 +319,10 @@ func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
 	}
 	if cookie, err := r.Cookie(sessionCookie); err == nil && s.auth.Valid(cookie.Value) {
 		resp.Authenticated = true
+	}
+	if s.hasValidAPIToken(r) {
+		resp.Authenticated = true
+		resp.Username = "api-token"
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

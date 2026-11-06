@@ -54,6 +54,11 @@ type Config struct {
 	// AdminPassword, when set, seeds the administrator account on first start.
 	AdminPassword string
 
+	// APIToken, when set, enables "Authorization: Bearer <token>" access to the
+	// JSON API for automation (for example an agent). It grants administrator
+	// rights and skips the CSRF header check.
+	APIToken string
+
 	// LogBuffer is the number of console lines kept in memory.
 	LogBuffer int
 
@@ -89,6 +94,7 @@ func FromEnv(version string) Config {
 		PublicAddress:   os.Getenv("SB_PUBLIC_ADDRESS"),
 		AdminUser:       env("SB_ADMIN_USER", "admin"),
 		AdminPassword:   os.Getenv("SB_ADMIN_PASSWORD"),
+		APIToken:        os.Getenv("SB_API_TOKEN"),
 		GitHubToken:     os.Getenv("SB_GITHUB_TOKEN"),
 		LogBuffer:       envInt("SB_LOG_BUFFER", 2000),
 		Version:         version,

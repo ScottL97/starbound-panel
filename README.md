@@ -43,7 +43,7 @@ docker run -d --name starbound-panel \
   -v "$PWD/data:/data" \
   -v "$PWD/backups:/backup" \
   -e TZ=Asia/Shanghai \
-  ghcr.io/scottl97/starbound-panel:0.4.5
+  ghcr.io/scottl97/starbound-panel:0.4.6
 ```
 
 Then open <http://localhost:8080> and:
@@ -85,6 +85,7 @@ All settings are environment variables.
 | `SB_ADMIN_PASSWORD` | *(empty)* | Seed the password on first start instead of using the setup page |
 | `SB_LOG_BUFFER` | `2000` | Console lines kept in memory |
 | `SB_GITHUB_TOKEN` | *(empty)* | Optional; lifts the GitHub API rate limit when listing OpenStarbound releases |
+| `SB_API_TOKEN` | *(empty)* | Optional bearer token for automation; grants admin access to the JSON API and skips the CSRF header |
 
 The game port and server name live in `starbound_server.config`. Starbound
 resolves that file relative to its **storage directory** (see
@@ -211,7 +212,7 @@ in [`internal/supervisor/parser.go`](internal/supervisor/parser.go).
 ## Building
 
 ```bash
-docker build --build-arg VERSION=0.4.5 -t starbound-panel:0.4.5 .
+docker build --build-arg VERSION=0.4.6 -t starbound-panel:0.4.6 .
 ```
 
 or locally:

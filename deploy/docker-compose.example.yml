@@ -1,7 +1,7 @@
 ﻿# Example deployment. Adjust paths and the image tag before use.
 services:
   starbound-panel:
-    image: ghcr.io/scottl97/starbound-panel:0.4.5
+    image: ghcr.io/scottl97/starbound-panel:0.4.6
     container_name: starbound-panel
     restart: unless-stopped
     ports:
