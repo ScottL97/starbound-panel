@@ -1,0 +1,7 @@
+# Keep the working tree byte-identical across platforms: the Dockerfile and the
+# shell snippets assume LF.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary

@@ -1,0 +1,17 @@
+﻿# Example deployment. Adjust paths and the image tag before use.
+services:
+  starbound-panel:
+    image: ghcr.io/scottl97/starbound-panel:0.4.5
+    container_name: starbound-panel
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "21025:21025/tcp"
+    volumes:
+      - ./data:/data
+      - ./backups:/backup
+    environment:
+      TZ: Asia/Shanghai
+      # Optional: seed the administrator password instead of using the setup page.
+      # SB_ADMIN_PASSWORD: change-me-please
+    stop_grace_period: 2m

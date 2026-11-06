@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Starbound Panel</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<!-- Login / first-run setup -->
+<div id="login" class="login-wrap hidden">
+  <form id="loginForm" class="card login-card" autocomplete="on">
+    <h1><span class="logo">✦</span> Starbound Panel</h1>
+    <p class="muted" id="loginHint">Sign in to manage the server.</p>
+
+    <label for="loginUser" data-i18n="login.username">Username</label>
+    <input id="loginUser" name="username" autocomplete="username" value="admin" required>
+
+    <label for="loginPass" data-i18n="login.password">Password</label>
+    <input id="loginPass" name="password" type="password" autocomplete="current-password" required>
+
+    <div id="confirmWrap" class="hidden">
+      <label for="loginPass2" data-i18n="login.confirm">Confirm password</label>
+      <input id="loginPass2" type="password" autocomplete="new-password">
+    </div>
+
+    <button class="primary wide" type="submit" id="loginSubmit">Sign in</button>
+    <p class="error" id="loginError"></p>
+  </form>
+</div>
+
+<!-- Main application -->
+<div id="app" class="layout hidden">
+  <aside class="sidebar">
+    <div class="brand"><span class="logo">✦</span><span>Starbound Panel</span></div>
+    <nav>
+      <button class="nav active" data-tab="dashboard"><span>◈</span><span data-i18n="nav.dashboard">Dashboard</span></button>
+      <button class="nav" data-tab="console"><span>▤</span><span data-i18n="nav.console">Console</span></button>
+      <button class="nav" data-tab="mods"><span>❖</span><span data-i18n="nav.mods">Mods</span></button>
+      <button class="nav" data-tab="backups"><span>⛁</span><span data-i18n="nav.backups">Backups</span></button>
+      <button class="nav" data-tab="settings"><span>⚙</span><span data-i18n="nav.settings">Settings</span></button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="row">
+        <select id="lang" aria-label="Language">
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+        </select>
+        <button id="logout" class="ghost" data-i18n="nav.logout">Sign out</button>
+      </div>
+      <div class="muted small"><span id="versionLabel"></span></div>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div id="statusPill" class="pill">—</div>
+      <div class="spacer"></div>
+      <div class="pill subtle"><span id="playerPill">0</span> <span data-i18n="nav.players">players</span></div>
+    </header>
+
+    <!-- Dashboard -->
+    <section id="tab-dashboard" class="tab active">
+      <div class="cards">
+        <div class="card stat">
+          <div class="label" data-i18n="dash.status">Status</div>
+          <div class="value" id="statStatus">—</div>
+          <div class="sub" id="statUptime"></div>
+        </div>
+        <div class="card stat">
+          <div class="label" data-i18n="dash.players">Players</div>
+          <div class="value" id="statPlayers">0</div>
+          <div class="sub" id="statPlayerNames"></div>
+        </div>
+        <div class="card stat">
+          <div class="label" data-i18n="dash.lastBackup">Last backup</div>
+          <div class="value" id="statBackup">—</div>
+          <div class="sub" id="statBackupSub"></div>
+        </div>
+        <div class="card stat">
+          <div class="label" data-i18n="dash.server">Server</div>
+          <div class="value" id="statInstall">—</div>
+          <div class="sub" id="statPort"></div>
+        </div>
+        <div class="card stat">
+          <div class="label" data-i18n="dash.address">Connect address</div>
+          <div class="value mono" id="statAddress" style="font-size:16px;word-break:break-all">—</div>
+          <div class="sub row">
+            <button type="button" class="chip" id="copyAddress" data-i18n="dash.copy">Copy</button>
+            <span id="statAddressNote"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row wrap">
+          <button id="btnStart" class="primary" data-i18n="dash.start">Start</button>
+          <button id="btnStop" data-i18n="dash.stop">Stop</button>
+          <button id="btnRestart" data-i18n="dash.restart">Restart</button>
+          <button id="btnInstall" data-i18n="dash.install">Install / update</button>
+          <button id="btnBackup" data-i18n="dash.backupNow">Backup now</button>
+        </div>
+        <p class="muted small" id="installHint"></p>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="dash.online">Online players</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="table.name">Name</th>
+              <th data-i18n="table.id">Client</th>
+              <th data-i18n="table.host">Address</th>
+              <th data-i18n="table.since">Connected</th>
+            </tr>
+          </thead>
+          <tbody id="playerRows"></tbody>
+        </table>
+        <p class="muted small" id="playersEmpty" data-i18n="dash.noPlayers">No players online.</p>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="dash.console">Console</h2>
+        <div id="miniLog" class="log mini"></div>
+      </div>
+    </section>
+
+    <!-- Console -->
+    <section id="tab-console" class="tab">
+      <div class="card grow">
+        <div class="row">
+          <h2 data-i18n="console.title">Live console</h2>
+          <div class="spacer"></div>
+          <label class="check"><input type="checkbox" id="pauseLog"> <span data-i18n="console.pause">Pause</span></label>
+          <label class="check"><input type="checkbox" id="followLog" checked> <span data-i18n="console.follow">Follow</span></label>
+          <button id="clearLog" class="ghost" data-i18n="console.clear">Clear</button>
+        </div>
+        <div id="log" class="log"></div>
+        <form id="cmdForm" class="row command-row">
+          <input id="cmdInput" placeholder="/say hello" autocomplete="off" spellcheck="false">
+          <button class="primary" type="submit" data-i18n="console.send">Send</button>
+        </form>
+        <div class="row wrap quick">
+          <button class="chip" data-cmd="/help">/help</button>
+          <button class="chip" data-cmd="/say ">/say</button>
+          <button class="chip" data-cmd="/kick ">/kick</button>
+          <button class="chip" data-cmd="/ban ">/ban</button>
+          <button class="chip" data-cmd="/whitelist">/whitelist</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mods -->
+    <section id="tab-mods" class="tab">
+      <div class="card">
+        <h2 data-i18n="mods.browse">Browse the Workshop</h2>
+        <p class="muted small" data-i18n="mods.browseHint">Search Starbound Workshop items and subscribe them to the server: the panel downloads the item with steamcmd and copies its .pak files into the server mods directory. Restart the server to apply changes.</p>
+        <form id="wsForm" class="row wrap">
+          <input id="wsQuery" placeholder="Search the Workshop…" autocomplete="off">
+          <button class="primary" type="submit" data-i18n="mods.search">Search</button>
+          <button type="button" id="wsPopular" data-i18n="mods.popular">Popular</button>
+          <button type="button" id="wsPrev" class="ghost" data-i18n="mods.prev">Prev</button>
+          <button type="button" id="wsNext" class="ghost" data-i18n="mods.next">Next</button>
+        </form>
+        <p class="muted small" id="wsNote"></p>
+        <div id="wsResults" class="mod-grid"></div>
+        <p class="muted small hidden" id="wsEmpty" data-i18n="mods.noResults">No items found.</p>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="mods.installed">Installed on the server</h2>
+        <p class="muted small" data-i18n="mods.hint">Subscribed items are downloaded by steamcmd and their .pak files copied into the server mods directory. Disabling moves them out of the game's search path.</p>
+        <form id="modForm" class="row">
+          <input id="modId" inputmode="numeric" placeholder="Workshop id, e.g. 2056569194" autocomplete="off">
+          <button class="primary" type="submit" data-i18n="mods.add">Subscribe by id</button>
+        </form>
+        <div id="modCards" class="mod-grid"></div>
+        <p class="muted small" id="modsEmpty" data-i18n="mods.empty">No mods managed yet.</p>
+        <p class="muted small" data-i18n="mods.playerNote">Starbound does not expose client mod lists, so the panel cannot show which mods a player is subscribed to.</p>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="mods.external">Unmanaged files</h2>
+        <p class="muted small" data-i18n="mods.externalHint">.pak files that were copied into the mods directory by hand. The dedicated server never downloads Steam subscriptions by itself, so workshop content has to be placed here (or subscribed above).</p>
+        <form id="uploadForm" class="row wrap">
+          <input type="file" id="uploadFiles" multiple accept=".pak,.zip">
+          <button class="primary" type="submit" data-i18n="mods.upload">Upload</button>
+          <span class="muted small" id="uploadNote"></span>
+        </form>
+        <p class="muted small" data-i18n="mods.uploadHint">Upload one or more .pak files, or a .zip that contains them (subfolders are flattened). Files land enabled in the mods directory; restart the server to apply.</p>
+        <div id="externalCards" class="mod-grid"></div>
+        <p class="muted small hidden" id="externalEmpty" data-i18n="mods.externalEmpty">No unmanaged files.</p>
+      </div>
+    </section>
+
+    <!-- Backups -->
+    <section id="tab-backups" class="tab">
+      <div class="card">
+        <h2 data-i18n="backups.schedule">Schedule</h2>
+        <form id="scheduleForm" class="row wrap">
+          <label class="check"><input type="checkbox" id="backupEnabled"> <span data-i18n="backups.enabled">Automatic backups</span></label>
+          <label class="field">
+            <span data-i18n="backups.every">Every (hours)</span>
+            <input id="backupInterval" type="number" min="1" max="720">
+          </label>
+          <label class="field">
+            <span data-i18n="backups.keep">Keep</span>
+            <input id="backupRetention" type="number" min="1" max="365">
+          </label>
+          <button class="primary" type="submit" data-i18n="backups.save">Save schedule</button>
+          <button type="button" id="btnBackup2" data-i18n="dash.backupNow">Backup now</button>
+        </form>
+        <p class="muted small" id="backupRunning"></p>
+      </div>
+      <div class="card">
+        <h2 data-i18n="backups.title">Archives</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th data-i18n="table.name">Name</th>
+              <th data-i18n="table.size">Size</th>
+              <th data-i18n="table.created">Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="backupRows"></tbody>
+        </table>
+        <p class="muted small" id="backupsEmpty" data-i18n="backups.empty">No backups yet.</p>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section id="tab-settings" class="tab">
+      <div class="card">
+        <h2 data-i18n="settings.steam">Steam account</h2>
+        <p class="muted small" data-i18n="settings.steamHint">The Starbound dedicated server can only be downloaded by an account that owns the game. Credentials are stored on the data volume (mode 0600) and never returned by the API.</p>
+        <form id="steamForm" class="stack">
+          <label class="field"><span data-i18n="settings.username">Username</span><input id="steamUser" autocomplete="off"></label>
+          <label class="field"><span data-i18n="settings.password">Password</span><input id="steamPass" type="password" autocomplete="new-password" placeholder="••••••"></label>
+          <label class="field"><span data-i18n="settings.guard">Steam Guard code (optional)</span><input id="steamGuard" autocomplete="off" inputmode="numeric"></label>
+          <div class="row wrap">
+            <button class="primary" type="submit" data-i18n="settings.saveSteam">Save credentials</button>
+            <button type="button" id="steamTest" data-i18n="settings.testLogin">Test login</button>
+            <span class="muted small" id="steamState"></span>
+          </div>
+        </form>
+        <p class="muted small" data-i18n="settings.guardHint">If the account uses the Steam mobile authenticator, steamcmd waits for a confirmation. Approve it in the app, or paste the current 5-character code above and press Test login right away. A successful login is cached on the data volume, so this is a one-time step.</p>
+        <label class="field"><span data-i18n="settings.webApiKey">Steam Web API key (optional, enables Workshop search)</span><input id="webApiKey" autocomplete="off" placeholder="32 hex characters"></label>
+        <div class="row wrap">
+          <button type="button" id="saveWebApiKey" data-i18n="settings.saveApiKey">Save API key</button>
+          <span class="muted small" id="webApiKeyState"></span>
+        </div>
+        <p class="muted small" data-i18n="settings.webApiKeyHint">Create a free key at steamcommunity.com/dev/apikey. It is only used to search the Workshop; item details work without it.</p>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="engine.title">Server engine</h2>
+        <p class="muted small" data-i18n="engine.hint">Switch between the official Steam build and OpenStarbound. Stop the server first; the vanilla binary is kept on the volume so switching back works without Steam.</p>
+        <div class="row wrap">
+          <div class="field">
+            <span data-i18n="engine.current">Installed engine</span>
+            <div id="engineCurrent" class="pill">—</div>
+          </div>
+        </div>
+        <form id="engineForm" class="row wrap">
+          <label class="field">
+            <span data-i18n="engine.flavor">Engine</span>
+            <select id="engineFlavor">
+              <option value="vanilla" data-i18n="engine.vanilla">Starbound (Steam)</option>
+              <option value="openstarbound">OpenStarbound</option>
+            </select>
+          </label>
+          <label class="field">
+            <span data-i18n="engine.release">OpenStarbound release</span>
+            <select id="engineTag"></select>
+          </label>
+          <button class="primary" type="submit" data-i18n="engine.switch">Switch engine</button>
+        </form>
+        <p class="muted small" id="engineNote"></p>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="settings.serverConfig">Server configuration</h2>
+        <p class="muted small" data-i18n="settings.serverConfigHint">Raw starbound_server.config. The server must be restarted for changes to take effect.</p>
+        <textarea id="configText" class="mono" rows="14" spellcheck="false"></textarea>
+        <div class="row"><button class="primary" id="saveConfig" data-i18n="settings.saveConfig">Save configuration</button><span class="muted small" id="configPath"></span></div>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="settings.security">Security</h2>
+        <form id="passwordForm" class="stack">
+          <label class="field"><span data-i18n="settings.current">Current password</span><input id="curPass" type="password" autocomplete="current-password"></label>
+          <label class="field"><span data-i18n="settings.new">New password</span><input id="newPass" type="password" autocomplete="new-password"></label>
+          <div class="row"><button class="primary" type="submit" data-i18n="settings.changePassword">Change password</button></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="settings.panel">Panel</h2>
+        <form id="panelForm" class="row wrap">
+          <label class="check"><input type="checkbox" id="autoRestart"> <span data-i18n="settings.autoRestart">Restart after a crash</span></label>
+          <label class="field"><span data-i18n="settings.stopTimeout">Stop timeout (seconds)</span><input id="stopTimeout" type="number" min="10" max="600"></label>
+          <button class="primary" type="submit" data-i18n="settings.save">Save</button>
+        </form>
+        <p class="muted small" id="panelInfo"></p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/static/i18n.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

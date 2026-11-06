@@ -1,0 +1,13 @@
+# Build output
+/starbound-panel
+/dist/
+/bin/
+
+# Local runtime data
+/data/
+/backups/
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
